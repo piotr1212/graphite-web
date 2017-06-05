@@ -1,8 +1,8 @@
+import sys
 from pyparsing import (
     Forward, Combine, Optional, Word, Literal, CaselessKeyword,
     CaselessLiteral, Group, FollowedBy, LineEnd, OneOrMore, ZeroOrMore,
-    alphas, alphanums, printables, delimitedList, quotedString, Regex,
-    __version__,
+    alphas, alphanums, delimitedList, quotedString, Regex, __version__,
 )
 
 grammar = Forward()
@@ -76,7 +76,9 @@ call = Group(
 )('call')
 
 # Metric pattern (aka. pathExpression)
-validMetricChars = ''.join((set(printables) - set(symbols)))
+unicodePrintables = u''.join(unichr(c) for c in xrange(sys.maxunicode)
+                             if not unichr(c).isspace())
+validMetricChars = ''.join((set(unicodePrintables) - set(symbols)))
 escapedChar = backslash + Word(symbols, exact=1)
 partialPathElem = Combine(
   OneOrMore(
