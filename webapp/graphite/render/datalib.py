@@ -70,6 +70,8 @@ class TimeSeries(list):
     else:
       return list.__iter__(self)
 
+  def getValues(self):
+    return list(self)
 
   def consolidate(self, valuesPerPoint):
     self.valuesPerPoint = int(valuesPerPoint)

@@ -12,6 +12,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 
+import matplotlib
+#from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.backends.backend_cairo import FigureCanvasCairo as FigureCanvas
+from matplotlib.figure import Figure
+#import matplotlib
+#matplotlib.use('Cairo')
+#matplotlib.use('Agg')
+#import matplotlib.pyplot as plt
+#from cycler import cycler
+from graphite.logger import log
+
 import math, itertools, re
 from datetime import datetime, timedelta
 from six.moves import range, zip
@@ -159,6 +170,107 @@ EPSILON = 0.0001
 class GraphError(Exception):
   pass
 
+
+class MinimalMplGraph:
+    #customizable = matplotlib.rcParams
+    customizable = ('width', 'height', 'dpi', 'title', 'vtitle')
+
+    def legacy_params_to_rc(self, **params):
+        rc = {}
+        if 'hideAxes' in params:
+            rc['axes.grid'] = params.get('hideAxes')
+        return rc
+
+    def __init__(self, **params):
+        print(params)
+        print(matplotlib.rcParams)
+
+        self.data = params['data']
+
+        #matplotlib.rc('axes', grid=True)
+        rc = {
+            'xtick.major.size': 15,
+            'axes.grid': True
+        }
+        for k, v in rc.items():
+            print(k, v)
+            matplotlib.rcParams[k] = v
+
+        #matplotlib.rc('xtick.major.size', 15)
+        #matplotlib.rcParams['axes.grid'] = not params.get('hideAxes', False)
+
+        # matplotlib wants sizes in inches while we do it in pixels.
+        # Higher DPI makes text overlap on smaller image sizes.
+        dpi = params.get('dpi', 72)
+        width = params.get('width', 1200) / dpi
+        height = params.get('height', 800) / dpi
+
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        FigureCanvas(self.fig)
+
+        # tight looks better but only supports Agg backend:
+        # todo check what it actually does
+        #self.fig.tight_layout()
+
+        ax = self.fig.add_subplot(111)
+
+        #self.ax.plot([1, 2, 3])
+        #self.ax.set_title('hi mom')
+        #self.ax.grid(True)
+        #self.ax.set_xlabel('time')
+        #self.ax.set_ylabel('volts')
+        
+        ax.set_title(params.get('title', ''))
+        ax.set_ylabel(params.get('vtitle', ''))
+
+        for series in self.data:
+            # calculate the end date, series.end seems unreliable
+            end_date = series.start + len(series) * series.step
+            dates_epoch = range(series.start, end_date, series.step)
+            dates = matplotlib.dates.epoch2num(dates_epoch)
+
+            # Set X axis range manually to handle None values
+            ax.set_xlim(dates[0], dates[-1])
+
+            ax.plot_date(dates, series, '-')
+
+       # #self.fig = plt.figure(figsize=(self.width/100.0, self.height/100.0),
+       # self.fig = plt.figure()
+       # # 111 is position
+       # self.axes = self.fig.add_subplot(111)
+
+       # for series in self.data:
+       #     values = series.getValues()
+       #     log.rendering("Len Values {}".format(len(values)))
+
+       #     # TODO: Find out why series.end doesn't match the actual values in
+       #     # some cases, calculate end for now.
+       #     dates_epoch = range(series.start,
+       #                         series.start + len(values) * series.step,
+       #                         series.step)
+       #     dates = matplotlib.dates.epoch2num(dates_epoch)
+
+       #     # Set X axis range manually to handle None values
+       #     self.axes.set_xlim(dates[0], dates[-1])
+
+       #     # to connect lines filter out None values in X and Y data
+       #     #if self.connected:
+       #     #    dates = [dates[i] for i in range(len(values)) if values[i]]
+       #     #    values = [values[i] for i in range(len(values)) if values[i]]
+
+       #     ##self.axes.plot_date(dates, values, '-', label=series.name,
+
+       #     #if self.areaMode == 'none':
+       #     self.axes.plot(dates, values, '-', label=series.name)
+       #     #else:
+       #     #allvalues.append(values)
+       #     #labels.append(series.name)
+
+       #     #self.axes.xaxis_date(tz=self.tzinfo)
+
+
+    def output(self, fileObj):
+        self.fig.savefig(fileObj)
 
 class _AxisTics:
   def __init__(self, minValue, maxValue, unitSystem=None):
@@ -514,6 +626,208 @@ class _LogAxisTics(_AxisTics):
        value *= self.base
 
     return values
+
+
+
+
+
+
+
+
+#class MplGraph:
+#    #customizable = ('width','height','margin','bgcolor','fgcolor', \
+#    #             'fontName','fontSize','fontBold','fontItalic', \
+#    #             'colorList','template','yAxisSide','outputFormat')
+#    customizable = ('width', 'height', 'bgcolor', 'fgcolor', 'fontName',
+#                    'fontSize', 'fontBold', 'fontItalic', 'colorList',
+#                    'yAxisSide', 'yAxisSide', 'tz', 'format')
+#    # TODO: Template and margins
+#
+#    def __init__(self, **params):
+#        log.rendering("init mpllinegraph")
+#        self.data = params['data']
+#        self.width = int(params.get('width', 200))
+#        self.height = int(params.get('height', 200))
+#        self.bgcolor = params.get('bgcolor', defaultGraphOptions['background'])
+#        self.tzinfo = pytz.timezone(params.get('tz', settings.TIME_ZONE))
+#        self.format = params.get('format', 'png').lower()
+#
+#        # TODO: Old fontnames don't match (only ttf?)
+#        plt.rcParams["font.family"] = \
+#                params.get('fontName', defaultGraphOptions['fontname'])
+#        plt.rcParams["font.size"] = \
+#                params.get('fontSize', defaultGraphOptions['fontsize'])
+#
+#        if params.get('fontBold',
+#                      defaultGraphOptions['fontbold'].lower() == 'true'):
+#            plt.rcParams["font.weight"] = 'bold'
+#        else:
+#            plt.rcParams["font.weight"] = 'normal'
+#
+#        if params.get('fontItalic',
+#                      defaultGraphOptions['fontitalic'].lower() == 'true'):
+#            plt.rcParams["font.style"] = 'italic'
+#        else:
+#            plt.rcParams["font.style"] = 'normal'
+#
+#        fontcolor = params.get('fgcolor', defaultGraphOptions['foreground'])
+#        plt.rcParams["text.color"] = fontcolor
+#        plt.rcParams["xtick.color"] = fontcolor
+#        plt.rcParams["ytick.color"] = fontcolor
+#
+#        colorNames = params.get('colorList', defaultGraphOptions['linecolors'])
+#        plt.rcParams['axes.prop_cycle'] = cycler(
+#            'color',
+#            ["#%0.2x%0.2x%0.2x" % colorAliases[c] for c in colorNames.split(',')]
+#        )
+#
+#        self.yAxisSide = params.get('yAxisSide', 'left').lower()
+#
+#        self.setupMpl()
+#        self.drawGraph()
+#
+#    def setupMpl(self):
+#        self.fig = plt.figure(figsize=(self.width/100.0, self.height/100.0),
+#                              dpi=100)
+#        self.axes = self.fig.add_subplot(111)
+#
+#    def output(self, fileObj):
+#        #plt.gcf().autofmt_xdate()
+#        self.fig.tight_layout()
+#        self.fig.savefig(fileObj,
+#                         facecolor=self.bgcolor,
+#                         transparent=True,
+#                         format=self.format)
+#
+#
+#class MplLineGraph(MplGraph):
+#  #customizable = Graph.customizable + \
+#  #               ('title','vtitle','lineMode','lineWidth','hideLegend', \
+#  #                'hideAxes','minXStep','hideGrid','majorGridLineColor', \
+#  #                'minorGridLineColor','thickness','min','max', \
+#  #                'graphOnly','yMin','yMax','yLimit','yStep','areaMode', \
+#  #                'areaAlpha','drawNullAsZero','tz', 'yAxisSide','pieMode', \
+#  #                'yUnitSystem', 'logBase','yMinLeft','yMinRight','yMaxLeft', \
+#  #                'yMaxRight', 'yLimitLeft', 'yLimitRight', 'yStepLeft', \
+#  #                'yStepRight', 'rightWidth', 'rightColor', 'rightDashed', \
+#  #                'leftWidth', 'leftColor', 'leftDashed', 'xFormat', 'minorY', \
+#  #                'hideYAxis', 'uniqueLegend', 'vtitleRight', 'yDivisors', \
+#  #                'connectedLimit', 'hideXAxis', 'hideNullFromLegend')
+#    validAreaModes = ('none', 'stacked')
+#    #validAreaModes = ('none','first','all','stacked')
+#  #validPieModes = ('maximum', 'minimum', 'average')
+#
+#    customizable = MplGraph.customizable + \
+#                   ('title', 'vtitle', 'lineMode', 'lineWidth', 'hideLegend',
+#                    'hideAxes', 'hideGrid', 'areaMode')
+#    validLineModes = ('staircase', 'steps', 'slope', 'connected', 'default')
+#
+#    def __init__(self, **params):
+#        log.rendering("init mpllinegraph")
+#
+#        self.hideGrid = params.get('hideGrid', False)
+#        self.hideLegend = params.get('hideLegend', False)
+#        self.title = params.get('title', None)
+#        self.ylabel = params.get('vtitle', None)
+#        self.hideAxes = params.get('hideAxes', False)
+#
+#        self.lineMode = params.get('lineMode', 'default').lower()
+#        assert self.lineMode in self.validLineModes, "Invalid line mode!"
+#
+#        self.lineWidth = float(params.get('lineWidth', 1.2))
+#
+#        self.connected = params.get('connected', False)
+#
+#        self.areaMode = params.get('areaMode', 'none').lower()
+#        #assert self.areaMode in self.validAreaModes, "Invalid area mode!"
+#
+#        super(MplLineGraph, self).__init__(**params)
+#
+#    #self.lineWidth = float( params.get('lineWidth', 1.2) )
+#    #self.lineMode = params.get('lineMode','slope').lower('w)
+#    #self.connectedLimit = params.get("connectedLimit", INFINITY)
+#
+#    #self.pieMode = params.get('pieMode', 'maximum').lower()
+#    #assert self.pieMode in self.validPieModes, "Invalid pie mode!"
+#
+#
+#
+#    def drawGraph(self):
+#
+#        # Support old lineMode names
+#        if self.lineMode == 'slope':
+#            self.lineMode = 'default'
+#        elif self.lineMode == 'staircase':
+#            self.lineMode = 'steps'
+#        elif self.lineMode == 'connected':
+#            self.connected = True
+#            self.lineMode = 'default'
+#
+#        # TODO: Hides more than just axes
+#        if self.hideAxes:
+#            self.axes.set_axis_off()
+#
+#        if not self.hideGrid:
+#            self.axes.grid()
+#
+#        if self.title:
+#            self.axes.set_title(self.title)
+#
+#        if self.ylabel:
+#            self.axes.set_ylabel(self.ylabel)
+#
+#        allvalues = []
+#        labels = []
+#
+#        for series in self.data:
+#            values = series.getValues()
+#            log.rendering("Len Values {}".format(len(values)))
+#
+#            # TODO: Find out why series.end doesn't match the actual values in
+#            # some cases, calculate end for now.
+#            dates_epoch = range(series.start,
+#                                series.start + len(values) * series.step,
+#                                series.step)
+#            dates = matplotlib.dates.epoch2num(dates_epoch)
+#
+#            # Set X axis range manually to handle None values
+#            self.axes.set_xlim(dates[0], dates[-1])
+#
+#            # to connect lines filter out None values in X and Y data
+#            if self.connected:
+#                dates = [dates[i] for i in xrange(len(values)) if values[i]]
+#                values = [values[i] for i in xrange(len(values)) if values[i]]
+#
+#
+#            #self.axes.plot_date(dates, values, '-', label=series.name,
+#
+#            if self.areaMode == 'none':
+#                self.axes.plot(dates, values, '-', label=series.name,
+#                               drawstyle=self.lineMode,
+#                               linewidth=self.lineWidth)
+#            else:
+#                allvalues.append(values)
+#                labels.append(series.name)
+#
+#            self.axes.xaxis_date(tz=self.tzinfo)
+#
+#        if self.areaMode == 'stacked':
+#            #self.axes.stackplot(dates, *allvalues, labels=labels)
+#            #print(dates)
+#            #print(*allvalues)
+#            self.axes.stackplot(
+#                    [100, 200, 300, 400],
+#                    [99, 33, 77, 10],
+#                    [10, 20, 10, 20])
+#            #self.axes.stackplot(dates, *allvalues)
+#
+#        if self.yAxisSide == 'right':
+#            self.axes.yaxis.tick_right()
+#        else:
+#            self.axes.yaxis.tick_left()
+#
+#        if not self.hideLegend:
+#            self.axes.legend()
 
 
 class Graph:
@@ -1867,6 +2181,8 @@ class PieGraph(Graph):
 GraphTypes = {
   'line' : LineGraph,
   'pie' : PieGraph,
+  #'mplLine' : MplLineGraph,
+  'mplLine' : MinimalMplGraph,
 }
 
 

@@ -95,7 +95,8 @@ def renderView(request):
           func = PieFunction(requestOptions['pieMode'])
           data.append( (series.name, func(requestContext, series) or 0 ))
 
-  elif requestOptions['graphType'] == 'line':
+  elif requestOptions['graphType'] == 'line' or \
+       requestOptions['graphType'] == 'mplLine':
     # Let's see if at least our data is cached
     cachedData = None
     if useCache:
@@ -167,6 +168,7 @@ def renderViewGraph(graphOptions, requestOptions, data):
     return buildResponse(image, 'application/x-pdf')
 
   if graphOptions['outputFormat'] == 'svg':
+    # TODO: This is now probably broken
     if 'jsonp' in requestOptions:
       return HttpResponse(
         content="%s(%s)" % (requestOptions['jsonp'], json.dumps(image)),
@@ -329,7 +331,8 @@ def parseOptions(request):
   graphOptions = {'width' : 330, 'height' : 250}
   requestOptions = {}
 
-  graphType = queryParams.get('graphType','line')
+  # graphType = queryParams.get('graphType','line')
+  graphType = queryParams.get('graphType', 'mplLine')
   if graphType not in GraphTypes:
     raise AssertionError("Invalid graphType '%s', must be one of %s"
                          % (graphType,list(GraphTypes)))
@@ -414,7 +417,7 @@ def parseOptions(request):
   requestOptions['tzinfo'] = tzinfo
 
   # Get the time interval for time-oriented graph types
-  if graphType == 'line' or graphType == 'pie':
+  if graphType == 'line' or graphType == 'pie' or graphType == 'mplLine':
     if 'now' in queryParams:
         now = parseATTime(queryParams['now'], tzinfo)
     else:
