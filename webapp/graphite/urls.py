@@ -27,7 +27,6 @@ graphite_urls = [
     url('^dashboard', include('graphite.dashboard.urls')),
     url('^whitelist', include('graphite.whitelist.urls')),
     url('^version', include('graphite.version.urls')),
-    url('^events', include('graphite.events.urls')),
     url('^tags', include('graphite.tags.urls')),
     url('^functions', include('graphite.functions.urls')),
     url('^s/(?P<path>.*)', shorten, name='shorten'),

@@ -95,8 +95,6 @@ try:
         'graphite.composer',
         'graphite.dashboard',
         'graphite.dashboard.migrations',
-        'graphite.events',
-        'graphite.events.migrations',
         'graphite.finders',
         'graphite.functions',
         'graphite.functions.custom',

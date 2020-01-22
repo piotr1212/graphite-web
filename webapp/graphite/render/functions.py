@@ -35,7 +35,6 @@ from os import environ
 
 from django.conf import settings
 from graphite.errors import NormalizeEmptyResultError, InputParameterError
-from graphite.events import models
 from graphite.functions import SeriesFunction, ParamTypes, Param, ParamTypeAggFunc, getAggFunc, safe
 from graphite.logger import log
 from graphite.render.attime import getUnitString, parseTimeOffset, parseATTime, SECONDS_STRING, MINUTES_STRING, HOURS_STRING, DAYS_STRING, WEEKS_STRING, MONTHS_STRING, YEARS_STRING
@@ -5521,56 +5520,6 @@ aliasByTags.params = [
 ]
 
 
-def events(requestContext, *tags):
-  """
-  Returns the number of events at this point in time. Usable with
-  drawAsInfinite.
-
-  Example:
-
-  .. code-block:: none
-
-    &target=events("tag-one", "tag-two")
-    &target=events("*")
-
-  Returns all events tagged as "tag-one" and "tag-two" and the second one
-  returns all events.
-  """
-  step = 1
-  name = "events(\"" + "\", \"".join(tags) + "\")"
-  if tags == ("*",):
-    tags = None
-
-  start_timestamp = epoch(requestContext["startTime"])
-  start_timestamp = start_timestamp - start_timestamp % step
-  end_timestamp = epoch(requestContext["endTime"])
-  end_timestamp = end_timestamp - end_timestamp % step
-  points = (end_timestamp - start_timestamp) // step
-
-  events = models.Event.find_events(epoch_to_dt(start_timestamp),
-                                    epoch_to_dt(end_timestamp),
-                                    tags=tags)
-
-  values = [None] * points
-  for event in events:
-    event_timestamp = epoch(event.when)
-    value_offset = (event_timestamp - start_timestamp) // step
-
-    if values[value_offset] is None:
-      values[value_offset] = 1
-    else:
-      values[value_offset] += 1
-
-  result_series = TimeSeries(name, start_timestamp, end_timestamp, step, values, 'sum', xFilesFactor=requestContext.get('xFilesFactor'))
-  return [result_series]
-
-
-events.group = 'Special'
-events.params = [
-  Param('tags', ParamTypes.string, required=True, multiple=True),
-]
-
-
 def minMax(requestContext, seriesList):
   """
   Applies the popular min max normalization technique, which takes
@@ -5794,7 +5743,6 @@ SeriesFunctions = {
   'changed': changed,
   'consolidateBy': consolidateBy,
   'constantLine': constantLine,
-  'events': events,
   'cumulative': cumulative,
   'fallbackSeries': fallbackSeries,
   'identity': identity,

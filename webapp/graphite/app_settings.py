@@ -98,7 +98,6 @@ INSTALLED_APPS = (
   'graphite.browser',
   'graphite.composer',
   'graphite.dashboard',
-  'graphite.events',
   'graphite.functions',
   'graphite.metrics',
   'graphite.render',
@@ -111,7 +110,6 @@ INSTALLED_APPS = (
   'django.contrib.contenttypes',
   'django.contrib.messages',
   'django.contrib.staticfiles',
-  'tagging',
 )
 if raven is not None:
     INSTALLED_APPS = INSTALLED_APPS + ('raven.contrib.django.raven_compat',)
