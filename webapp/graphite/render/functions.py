@@ -41,7 +41,7 @@ from graphite.render.attime import getUnitString, parseTimeOffset, parseATTime, 
 from graphite.render.evaluator import evaluateTarget
 from graphite.render.grammar import grammar
 from graphite.storage import STORE
-from graphite.util import epoch, epoch_to_dt, timestamp, deltaseconds
+from graphite.util import epoch, timestamp, deltaseconds
 
 # XXX format_units() should go somewhere else
 if environ.get('READTHEDOCS'):
